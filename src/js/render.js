@@ -144,15 +144,41 @@ function drawHUD( ctx, game, W ) {
   ctx.fillText( 'VIDAS ' + game.lives, W * TILE - 8, 4 );
 }
 
-const GHOST_COLORS = [ '#ff0000', '#00ffff', '#ffb8ff', '#ffb852' ];
+const GHOST_COLORS = [ '#ff0000', '#ffb8ff', '#00ffff', '#ffb852' ];
+
+const GHOST_LEGEND = [
+  { kind: 'hunter',   color: '#ff0000', name: 'Cazador' },
+  { kind: 'patrol',   color: '#ffb8ff', name: 'Patrullero' },
+  { kind: 'ambusher', color: '#00ffff', name: 'Acechador' },
+  { kind: 'erratic',  color: '#ffb852', name: 'Travieso' },
+];
+
+function drawLegend( ctx, W, H ) {
+  const y = H * TILE + 6;
+  ctx.fillStyle = '#fff';
+  ctx.font = '11px "Courier New", monospace';
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  let x = 8;
+  for ( const entry of GHOST_LEGEND ) {
+    ctx.fillStyle = entry.color;
+    ctx.fillRect( x, y + 2, 10, 10 );
+    ctx.fillStyle = '#fff';
+    ctx.fillText( entry.name, x + 14, y );
+    x += ctx.measureText( entry.name ).width + 30;
+  }
+}
+
+const LEGEND_H = 30;
 
 function draw( ctx, game, frame ) {
   const grid = game.grid;
   const W = grid[ 0 ].length;
   const H = grid.length;
+  const totalH = H * TILE + LEGEND_H;
 
   ctx.fillStyle = '#000';
-  ctx.fillRect( 0, 0, W * TILE, H * TILE );
+  ctx.fillRect( 0, 0, W * TILE, totalH );
 
   drawWalls( ctx, grid );
   drawDoor( ctx, grid );
@@ -160,6 +186,7 @@ function draw( ctx, game, frame ) {
   drawPacman( ctx, game.pacman, frame );
   game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, GHOST_COLORS[ i ] || '#ff0000' ) );
   drawHUD( ctx, game, W );
+  drawLegend( ctx, W, H );
 }
 
 window.draw = draw;
