@@ -42,7 +42,12 @@ function createGame() {
       dir: 'up',
       speed: GHOST_SPEED,
       kind: g.kind,
+      patrolTimer: 0,
+      released: false,
     } ) ),
+    ghostReleaseTimer: 0,
+    ghostQueue: [ 0, 1, 2, 3 ],
+    ghostQueueIndex: 0,
   };
 }
 
@@ -120,7 +125,7 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
-  if ( g.kind === 'hunter' ) {
+  const chaseTarget = () => {
     const px = Math.round( p.x );
     const py = Math.round( p.y );
     let best = choices[ 0 ];
@@ -135,7 +140,57 @@ function decideGhost( game, g ) {
         best = dir;
       }
     }
-    g.dir = best;
+    return best;
+  };
+
+  const pickClosest = ( tx, ty ) => {
+    let best = choices[ 0 ];
+    let bestDist = Infinity;
+    for ( const dir of choices ) {
+      const d = DIRS[ dir ];
+      const nx = g.x + d.x;
+      const ny = g.y + d.y;
+      const dist = Math.abs( nx - tx ) + Math.abs( ny - ty );
+      if ( dist < bestDist ) {
+        bestDist = dist;
+        best = dir;
+      }
+    }
+    return best;
+  };
+
+  if ( !g.released ) {
+    // Dentro de la pen: moverse aleatoriamente sin salir del area
+    const pen = window.PEN_INTERIOR;
+    const penChoices = choices.filter( ( dir ) => {
+      const d = DIRS[ dir ];
+      const nx = g.x + d.x;
+      const ny = g.y + d.y;
+      return nx >= pen.x1 && nx <= pen.x2 && ny >= pen.y1 && ny <= pen.y2;
+    } );
+    g.dir = ( penChoices.length ? penChoices : choices )[ Math.floor( Math.random() * ( penChoices.length || choices.length ) ) ];
+  } else if ( g.kind === 'hunter' ) {
+    g.dir = chaseTarget();
+  } else if ( g.kind === 'ambusher' ) {
+    const ahead = DIRS[ p.dir ] || { x: 0, y: 0 };
+    const tx = Math.round( p.x ) + ahead.x * 4;
+    const ty = Math.round( p.y ) + ahead.y * 4;
+    g.dir = pickClosest( tx, ty );
+  } else if ( g.kind === 'patrol' ) {
+    g.patrolTimer = ( g.patrolTimer || 0 ) + 1;
+    // ~7 segundos a 60fps = 420 frames
+    const scattering = Math.floor( g.patrolTimer / 420 ) % 2 === 1;
+    if ( scattering ) {
+      g.dir = pickClosest( 0, 0 ); // scatter a esquina superior izquierda
+    } else {
+      g.dir = chaseTarget();
+    }
+  } else if ( g.kind === 'erratic' ) {
+    if ( Math.random() < 0.75 ) {
+      g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+    } else {
+      g.dir = chaseTarget();
+    }
   } else {
     g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
   }
@@ -168,7 +223,11 @@ function resetPositions( game ) {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
+    g.released = false;
   } );
+  game.ghostReleaseTimer = 0;
+  game.ghostQueueIndex = 0;
+  game.ghostQueue = [ 0, 1, 2, 3 ];
 }
 
 function collides( a, b ) {
@@ -177,6 +236,18 @@ function collides( a, b ) {
 
 function update( game ) {
   movePacman( game );
+
+  // Liberacion escalonada de fantasmas
+  if ( game.ghostQueueIndex < game.ghostQueue.length ) {
+    game.ghostReleaseTimer++;
+    if ( game.ghostReleaseTimer >= 150 ) {
+      game.ghostReleaseTimer = 0;
+      const idx = game.ghostQueue[ game.ghostQueueIndex ];
+      game.ghosts[ idx ].released = true;
+      game.ghostQueueIndex++;
+    }
+  }
+
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
   for ( const g of game.ghosts ) {
