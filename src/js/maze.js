@@ -5,11 +5,13 @@
 // Coordenadas: celda (x,y), origen arriba-izquierda. x in [0,27], y in [0,30].
 // Simetrico respecto al eje vertical central (entre cols 13 y 14).
 
+const POWER_PELLET = 4;
+
 const MAZE_STR = [
   '############################', // 0  borde
   '#............##............#', // 1
   '#.####.#####.##.#####.####.#', // 2
-  '#.####.#####.##.#####.####.#', // 3
+  '#O####.#####.##.#####.####O#', // 3
   '#.####.#####.##.#####.####.#', // 4
   '#..........................#', // 5
   '#.####.##.########.##.####.#', // 6
@@ -29,7 +31,7 @@ const MAZE_STR = [
   '#............##............#', // 20
   '#.####.#####.##.#####.####.#', // 21
   '#.####.#####.##.#####.####.#', // 22
-  '#...##................##...#', // 23  fila inicio Pacman (13,23)
+  '#O..##................##O..#', // 23  fila inicio Pacman (13,23)
   '###.##.##.########.##.##.###', // 24
   '###.##.##.########.##.##.###', // 25
   '#......##....##....##......#', // 26
@@ -43,6 +45,7 @@ function parseTile( ch ) {
   if ( ch === '#' ) return 1;
   if ( ch === '.' ) return 2;
   if ( ch === '-' ) return 3;
+  if ( ch === 'O' ) return POWER_PELLET;
   return 0; // espacio = vacio transitable
 }
 
@@ -65,3 +68,4 @@ window.TUNNEL_ROW = TUNNEL_ROW;
 window.PACMAN_START = PACMAN_START;
 window.GHOST_STARTS = GHOST_STARTS;
 window.PEN_INTERIOR = PEN_INTERIOR;
+window.POWER_PELLET = POWER_PELLET;

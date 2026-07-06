@@ -21,7 +21,7 @@ function createGame() {
   grid[ PACMAN_START.y ][ PACMAN_START.x ] = 0;
 
   let dots = 0;
-  for ( const row of grid ) for ( const v of row ) if ( v === 2 ) dots++;
+  for ( const row of grid ) for ( const v of row ) if ( v === 2 || v === POWER_PELLET ) dots++;
 
   return {
     state: 'start',
@@ -44,10 +44,13 @@ function createGame() {
       kind: g.kind,
       patrolTimer: 0,
       released: false,
+      frightened: false,
     } ) ),
     ghostReleaseTimer: 0,
     ghostQueue: [ 0, 1, 2, 3 ],
     ghostQueueIndex: 0,
+    powerModeTimer: 0,
+    frightenedChain: 0,
   };
 }
 
@@ -104,6 +107,17 @@ function movePacman( game ) {
       grid[ p.y ][ p.x ] = 0;
       game.score += 10;
       game.dotsRemaining--;
+    }
+    // Comer Power Pellet.
+    if ( grid[ p.y ][ p.x ] === POWER_PELLET ) {
+      grid[ p.y ][ p.x ] = 0;
+      game.score += 50;
+      game.dotsRemaining--;
+      game.powerModeTimer = 480;
+      game.frightenedChain = 0;
+      game.ghosts.forEach( ( g ) => {
+        if ( g.released ) g.frightened = true;
+      } );
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
@@ -169,6 +183,23 @@ function decideGhost( game, g ) {
       return nx >= pen.x1 && nx <= pen.x2 && ny >= pen.y1 && ny <= pen.y2;
     } );
     g.dir = ( penChoices.length ? penChoices : choices )[ Math.floor( Math.random() * ( penChoices.length || choices.length ) ) ];
+  } else if ( g.frightened ) {
+    // Huida: maximizar distancia Manhattan respecto de Pac-Man
+    const px = Math.round( p.x );
+    const py = Math.round( p.y );
+    let best = choices[ 0 ];
+    let bestDist = -Infinity;
+    for ( const dir of choices ) {
+      const d = DIRS[ dir ];
+      const nx = g.x + d.x;
+      const ny = g.y + d.y;
+      const dist = Math.abs( nx - px ) + Math.abs( ny - py );
+      if ( dist > bestDist ) {
+        bestDist = dist;
+        best = dir;
+      }
+    }
+    g.dir = best;
   } else if ( g.kind === 'hunter' ) {
     g.dir = chaseTarget();
   } else if ( g.kind === 'ambusher' ) {
@@ -250,15 +281,36 @@ function update( game ) {
 
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
-  for ( const g of game.ghosts ) {
+  // Temporizador de modo poderoso
+  if ( game.powerModeTimer > 0 ) {
+    game.powerModeTimer--;
+    if ( game.powerModeTimer <= 0 ) {
+      game.ghosts.forEach( ( g ) => { g.frightened = false; } );
+      game.frightenedChain = 0;
+    }
+  }
+
+  for ( let i = 0; i < game.ghosts.length; i++ ) {
+    const g = game.ghosts[ i ];
     if ( collides( game.pacman, g ) ) {
-      game.lives--;
-      if ( game.lives <= 0 ) {
-        game.state = 'lost';
-        return;
+      if ( g.frightened ) {
+        game.score += 200;
+        g.x = GHOST_STARTS[ i ].x;
+        g.y = GHOST_STARTS[ i ].y;
+        g.dir = 'up';
+        g.released = false;
+        g.frightened = false;
+        g.patrolTimer = 0;
+        game.ghostQueue.push( i );
+      } else {
+        game.lives--;
+        if ( game.lives <= 0 ) {
+          game.state = 'lost';
+          return;
+        }
+        resetPositions( game );
+        break;
       }
-      resetPositions( game );
-      break;
     }
   }
 

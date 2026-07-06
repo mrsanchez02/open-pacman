@@ -5,6 +5,7 @@ const TILE = 20;
 const WALL_COLOR = '#2121ff';
 const DOOR_COLOR = '#ffb8ff';
 const DOT_COLOR = '#ffb897';
+const POWER_PELLET_COLOR = '#ffb897';
 
 function cellCenter( x, y ) {
   return { cx: x * TILE + TILE / 2, cy: y * TILE + TILE / 2 };
@@ -79,6 +80,20 @@ function drawDots( ctx, grid ) {
   }
 }
 
+function drawPowerPellets( ctx, grid, frame ) {
+  ctx.fillStyle = POWER_PELLET_COLOR;
+  for ( let y = 0; y < grid.length; y++ ) {
+    for ( let x = 0; x < grid[ 0 ].length; x++ ) {
+      if ( grid[ y ][ x ] !== POWER_PELLET ) continue;
+      const { cx, cy } = cellCenter( x, y );
+      const pulse = 1 + Math.sin( frame * 0.08 ) * 0.15;
+      ctx.beginPath();
+      ctx.arc( cx, cy, 6 * pulse, 0, Math.PI * 2 );
+      ctx.fill();
+    }
+  }
+}
+
 function drawPacman( ctx, p, frame ) {
   const { cx, cy } = cellCenter( p.x, p.y );
   let rot = 0;
@@ -101,10 +116,35 @@ function drawPacman( ctx, p, frame ) {
 function drawGhost( ctx, g, color ) {
   const { cx, cy } = cellCenter( g.x, g.y );
   const r = TILE / 2 - 1;
-  const top = cy - r;
   const bottom = cy + r;
   const left = cx - r;
   const right = cx + r;
+
+  if ( g.frightened ) {
+    ctx.fillStyle = '#2121ff';
+    ctx.beginPath();
+    ctx.arc( cx, cy - 1, r, Math.PI, 0, false );
+    ctx.lineTo( right, bottom );
+    ctx.lineTo( right - r * 0.66, bottom - 4 );
+    ctx.lineTo( cx, bottom );
+    ctx.lineTo( left + r * 0.66, bottom - 4 );
+    ctx.lineTo( left, bottom );
+    ctx.closePath();
+    ctx.fill();
+
+    // Ojos simples sin direccion (puntos negros)
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc( cx - 3.5, cy - 1, 3, 0, Math.PI * 2 );
+    ctx.arc( cx + 3.5, cy - 1, 3, 0, Math.PI * 2 );
+    ctx.fill();
+    ctx.fillStyle = '#0000bb';
+    ctx.beginPath();
+    ctx.arc( cx - 3.5, cy - 1, 1.5, 0, Math.PI * 2 );
+    ctx.arc( cx + 3.5, cy - 1, 1.5, 0, Math.PI * 2 );
+    ctx.fill();
+    return;
+  }
 
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -183,6 +223,7 @@ function draw( ctx, game, frame ) {
   drawWalls( ctx, grid );
   drawDoor( ctx, grid );
   drawDots( ctx, grid );
+  drawPowerPellets( ctx, grid, frame );
   drawPacman( ctx, game.pacman, frame );
   game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, GHOST_COLORS[ i ] || '#ff0000' ) );
   drawHUD( ctx, game, W );
