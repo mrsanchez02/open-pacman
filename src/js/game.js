@@ -42,6 +42,7 @@ function createGame() {
       dir: 'up',
       speed: GHOST_SPEED,
       kind: g.kind,
+      patrolTimer: 0,
     } ) ),
   };
 }
@@ -120,7 +121,7 @@ function decideGhost( game, g ) {
   // Sin salida (callejon): permitir el giro de 180.
   const choices = options.length ? options : [ '' + OPPOSITE[ g.dir ] ];
 
-  if ( g.kind === 'hunter' ) {
+  const chaseTarget = () => {
     const px = Math.round( p.x );
     const py = Math.round( p.y );
     let best = choices[ 0 ];
@@ -135,7 +136,47 @@ function decideGhost( game, g ) {
         best = dir;
       }
     }
-    g.dir = best;
+    return best;
+  };
+
+  const pickClosest = ( tx, ty ) => {
+    let best = choices[ 0 ];
+    let bestDist = Infinity;
+    for ( const dir of choices ) {
+      const d = DIRS[ dir ];
+      const nx = g.x + d.x;
+      const ny = g.y + d.y;
+      const dist = Math.abs( nx - tx ) + Math.abs( ny - ty );
+      if ( dist < bestDist ) {
+        bestDist = dist;
+        best = dir;
+      }
+    }
+    return best;
+  };
+
+  if ( g.kind === 'hunter' ) {
+    g.dir = chaseTarget();
+  } else if ( g.kind === 'ambusher' ) {
+    const ahead = DIRS[ p.dir ] || { x: 0, y: 0 };
+    const tx = Math.round( p.x ) + ahead.x * 4;
+    const ty = Math.round( p.y ) + ahead.y * 4;
+    g.dir = pickClosest( tx, ty );
+  } else if ( g.kind === 'patrol' ) {
+    g.patrolTimer = ( g.patrolTimer || 0 ) + 1;
+    // ~7 segundos a 60fps = 420 frames
+    const scattering = Math.floor( g.patrolTimer / 420 ) % 2 === 1;
+    if ( scattering ) {
+      g.dir = pickClosest( 0, 0 ); // scatter a esquina superior izquierda
+    } else {
+      g.dir = chaseTarget();
+    }
+  } else if ( g.kind === 'erratic' ) {
+    if ( Math.random() < 0.75 ) {
+      g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
+    } else {
+      g.dir = chaseTarget();
+    }
   } else {
     g.dir = choices[ Math.floor( Math.random() * choices.length ) ];
   }
