@@ -183,6 +183,23 @@ function decideGhost( game, g ) {
       return nx >= pen.x1 && nx <= pen.x2 && ny >= pen.y1 && ny <= pen.y2;
     } );
     g.dir = ( penChoices.length ? penChoices : choices )[ Math.floor( Math.random() * ( penChoices.length || choices.length ) ) ];
+  } else if ( g.frightened ) {
+    // Huida: maximizar distancia Manhattan respecto de Pac-Man
+    const px = Math.round( p.x );
+    const py = Math.round( p.y );
+    let best = choices[ 0 ];
+    let bestDist = -Infinity;
+    for ( const dir of choices ) {
+      const d = DIRS[ dir ];
+      const nx = g.x + d.x;
+      const ny = g.y + d.y;
+      const dist = Math.abs( nx - px ) + Math.abs( ny - py );
+      if ( dist > bestDist ) {
+        bestDist = dist;
+        best = dir;
+      }
+    }
+    g.dir = best;
   } else if ( g.kind === 'hunter' ) {
     g.dir = chaseTarget();
   } else if ( g.kind === 'ambusher' ) {
