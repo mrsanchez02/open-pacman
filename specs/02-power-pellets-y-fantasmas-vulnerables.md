@@ -1,6 +1,6 @@
 # SPEC 02 — Power Pellets en las 4 esquinas con fantasmas vulnerables
 
-> **Status:** Draft
+> **Status:** Approved
 > **Depends on:** SPEC 01
 > **Date:** 2026-07-06
 > **Objective:** Incorporar 4 Power Pellets en las esquinas internas del maze para que Pac-Man entre en estado poderoso durante 8 segundos, vuelva vulnerables a los fantasmas y pueda comerlos para enviarlos de regreso a la pen.
