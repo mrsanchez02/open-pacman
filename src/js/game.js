@@ -44,6 +44,7 @@ function createGame() {
       kind: g.kind,
       patrolTimer: 0,
       released: false,
+      frightened: false,
     } ) ),
     ghostReleaseTimer: 0,
     ghostQueue: [ 0, 1, 2, 3 ],
@@ -114,6 +115,9 @@ function movePacman( game ) {
       game.dotsRemaining--;
       game.powerModeTimer = 480;
       game.frightenedChain = 0;
+      game.ghosts.forEach( ( g ) => {
+        if ( g.released ) g.frightened = true;
+      } );
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
@@ -259,6 +263,15 @@ function update( game ) {
   }
 
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
+
+  // Temporizador de modo poderoso
+  if ( game.powerModeTimer > 0 ) {
+    game.powerModeTimer--;
+    if ( game.powerModeTimer <= 0 ) {
+      game.ghosts.forEach( ( g ) => { g.frightened = false; } );
+      game.frightenedChain = 0;
+    }
+  }
 
   for ( const g of game.ghosts ) {
     if ( collides( game.pacman, g ) ) {
