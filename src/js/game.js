@@ -223,7 +223,11 @@ function resetPositions( game ) {
     g.x = GHOST_STARTS[ i ].x;
     g.y = GHOST_STARTS[ i ].y;
     g.dir = 'up';
+    g.released = false;
   } );
+  game.ghostReleaseTimer = 0;
+  game.ghostQueueIndex = 0;
+  game.ghostQueue = [ 0, 1, 2, 3 ];
 }
 
 function collides( a, b ) {
