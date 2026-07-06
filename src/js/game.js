@@ -43,7 +43,11 @@ function createGame() {
       speed: GHOST_SPEED,
       kind: g.kind,
       patrolTimer: 0,
+      released: false,
     } ) ),
+    ghostReleaseTimer: 0,
+    ghostQueue: [ 0, 1, 2, 3 ],
+    ghostQueueIndex: 0,
   };
 }
 
@@ -155,7 +159,17 @@ function decideGhost( game, g ) {
     return best;
   };
 
-  if ( g.kind === 'hunter' ) {
+  if ( !g.released ) {
+    // Dentro de la pen: moverse aleatoriamente sin salir del area
+    const pen = window.PEN_INTERIOR;
+    const penChoices = choices.filter( ( dir ) => {
+      const d = DIRS[ dir ];
+      const nx = g.x + d.x;
+      const ny = g.y + d.y;
+      return nx >= pen.x1 && nx <= pen.x2 && ny >= pen.y1 && ny <= pen.y2;
+    } );
+    g.dir = ( penChoices.length ? penChoices : choices )[ Math.floor( Math.random() * ( penChoices.length || choices.length ) ) ];
+  } else if ( g.kind === 'hunter' ) {
     g.dir = chaseTarget();
   } else if ( g.kind === 'ambusher' ) {
     const ahead = DIRS[ p.dir ] || { x: 0, y: 0 };
@@ -218,6 +232,18 @@ function collides( a, b ) {
 
 function update( game ) {
   movePacman( game );
+
+  // Liberacion escalonada de fantasmas
+  if ( game.ghostQueueIndex < game.ghostQueue.length ) {
+    game.ghostReleaseTimer++;
+    if ( game.ghostReleaseTimer >= 150 ) {
+      game.ghostReleaseTimer = 0;
+      const idx = game.ghostQueue[ game.ghostQueueIndex ];
+      game.ghosts[ idx ].released = true;
+      game.ghostQueueIndex++;
+    }
+  }
+
   game.ghosts.forEach( ( g ) => moveGhost( game, g ) );
 
   for ( const g of game.ghosts ) {
