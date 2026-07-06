@@ -21,7 +21,7 @@ function createGame() {
   grid[ PACMAN_START.y ][ PACMAN_START.x ] = 0;
 
   let dots = 0;
-  for ( const row of grid ) for ( const v of row ) if ( v === 2 ) dots++;
+  for ( const row of grid ) for ( const v of row ) if ( v === 2 || v === POWER_PELLET ) dots++;
 
   return {
     state: 'start',
@@ -48,6 +48,8 @@ function createGame() {
     ghostReleaseTimer: 0,
     ghostQueue: [ 0, 1, 2, 3 ],
     ghostQueueIndex: 0,
+    powerModeTimer: 0,
+    frightenedChain: 0,
   };
 }
 
@@ -104,6 +106,14 @@ function movePacman( game ) {
       grid[ p.y ][ p.x ] = 0;
       game.score += 10;
       game.dotsRemaining--;
+    }
+    // Comer Power Pellet.
+    if ( grid[ p.y ][ p.x ] === POWER_PELLET ) {
+      grid[ p.y ][ p.x ] = 0;
+      game.score += 50;
+      game.dotsRemaining--;
+      game.powerModeTimer = 480;
+      game.frightenedChain = 0;
     }
     // Si no puede seguir, se detiene en la celda.
     if ( !canMove( grid, p.x, p.y, p.dir, 'pacman' ) ) return;
