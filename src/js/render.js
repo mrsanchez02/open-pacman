@@ -113,7 +113,7 @@ function drawPacman( ctx, p, frame ) {
   ctx.fill();
 }
 
-function drawGhost( ctx, g, color ) {
+function drawGhost( ctx, g, color, flashing, frame ) {
   const { cx, cy } = cellCenter( g.x, g.y );
   const r = TILE / 2 - 1;
   const bottom = cy + r;
@@ -121,7 +121,7 @@ function drawGhost( ctx, g, color ) {
   const right = cx + r;
 
   if ( g.frightened ) {
-    ctx.fillStyle = '#2121ff';
+    ctx.fillStyle = ( flashing && Math.floor( frame / 8 ) % 2 === 0 ) ? '#fff' : '#2121ff';
     ctx.beginPath();
     ctx.arc( cx, cy - 1, r, Math.PI, 0, false );
     ctx.lineTo( right, bottom );
@@ -225,7 +225,8 @@ function draw( ctx, game, frame ) {
   drawDots( ctx, grid );
   drawPowerPellets( ctx, grid, frame );
   drawPacman( ctx, game.pacman, frame );
-  game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, GHOST_COLORS[ i ] || '#ff0000' ) );
+  const flashingSoon = game.powerModeTimer > 0 && game.powerModeTimer <= 120;
+  game.ghosts.forEach( ( g, i ) => drawGhost( ctx, g, GHOST_COLORS[ i ] || '#ff0000', g.frightened && flashingSoon, frame ) );
   drawHUD( ctx, game, W );
   drawLegend( ctx, W, H );
 }
